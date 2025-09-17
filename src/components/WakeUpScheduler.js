@@ -33,10 +33,9 @@ export default function WakeUpScheduler({
 }) {
   const roommates = Object.keys(roomData).sort();
 
-  // Currently selected roommate in sidebar
+  // Selected roommate defaults to current user on load
   const [selectedRoommate, setSelectedRoommate] = useState(userName);
 
-  // Dates to show
   const dates = [getTodayDateStr(), getTomorrowDateStr()];
 
   return (
@@ -51,10 +50,10 @@ export default function WakeUpScheduler({
         overflow: "hidden",
         boxShadow: "0 2px 12px rgb(0 0 0 / 0.1)",
         height: 480,
-        userSelect: "none"
+        userSelect: "none",
       }}
     >
-      {/* Sidebar with roommate list */}
+      {/* Roommate list sidebar */}
       <aside
         style={{
           width: 180,
@@ -81,7 +80,7 @@ export default function WakeUpScheduler({
                 cursor: "pointer",
                 fontWeight: rm === selectedRoommate ? "700" : "normal",
                 transition: "background-color 0.3s",
-                wordBreak: "break-word"
+                wordBreak: "break-word",
               }}
               title={rm}
             >
@@ -108,7 +107,7 @@ export default function WakeUpScheduler({
         </button>
       </aside>
 
-      {/* Main panel showing timeslots for selected roommate */}
+      {/* Timeslot panel */}
       <main
         style={{
           flexGrow: 1,
@@ -175,9 +174,7 @@ export default function WakeUpScheduler({
                           backgroundColor: selected ? "#4caf50" : "#ddd",
                           color: selected ? "white" : "#555",
                           fontWeight: selected ? "600" : "normal",
-                          boxShadow: selected
-                            ? "0 0 8px #4caf5070"
-                            : "none",
+                          boxShadow: selected ? "0 0 8px #4caf5070" : "none",
                           transition: "background-color 0.3s",
                           userSelect: "none",
                         }}

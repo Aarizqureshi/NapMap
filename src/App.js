@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "./firebaseConfig";
-import {
-  doc,
-  onSnapshot,
-  updateDoc,
-} from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import RoomSelector from "./components/RoomSelector";
 import WakeUpScheduler from "./components/WakeUpScheduler";
 
@@ -12,9 +8,9 @@ export default function App() {
   const [roomId, setRoomId] = useState("");
   const [userName, setUserName] = useState("");
   const [joined, setJoined] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
-  const [roomData, setRoomData] = useState({});
+  const [roomData, setRoomData] = useState({}); // { username: { date: [timeslots] } }
 
+  // Listen for real-time updates from Firestore room document
   useEffect(() => {
     if (!joined || !roomId) return;
 
@@ -30,15 +26,17 @@ export default function App() {
     return () => unsubscribe();
   }, [joined, roomId]);
 
+  // Called when user selects or creates room + username
   const handleJoinRoom = (room, user) => {
     setRoomId(room);
     setUserName(user);
     setJoined(true);
-    setSelectedDate(new Date().toISOString().slice(0, 10));
   };
 
+  // Toggle timeslot for logged in user and update Firestore
   const toggleTimeSlot = async (date, timeslot) => {
     if (!joined) return;
+
     const userPrefs = roomData[userName] || {};
     const dateSlots = userPrefs[date] || [];
 
@@ -66,16 +64,14 @@ export default function App() {
     setRoomData({});
   };
 
-  if (!joined) {
-    return <RoomSelector onRoomJoin={handleJoinRoom} />;
-  }
+  // Show room join/create screen first
+  if (!joined) return <RoomSelector onRoomJoin={handleJoinRoom} />;
 
+  // Show scheduler UI after joining a room
   return (
     <WakeUpScheduler
       roomData={roomData}
       userName={userName}
-      selectedDate={selectedDate}
-      setSelectedDate={setSelectedDate}
       toggleTimeSlot={toggleTimeSlot}
       leaveRoom={leaveRoom}
       roomId={roomId}
