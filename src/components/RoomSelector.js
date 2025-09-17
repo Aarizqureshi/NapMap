@@ -91,24 +91,25 @@ export default function RoomSelector({ onRoomJoin }) {
 
   // Check if PIN required for join mode when roomId changes
   const checkRoomPinRequirement = async (roomId) => {
-    if (!roomId || !userName) {
-      setRequiresPin(false);
-      return;
-    }
-    const roomRef = doc(db, "rooms", roomId);
-    const roomSnap = await getDoc(roomRef);
-    if (roomSnap.exists()) {
-      const roomData = roomSnap.data();
-      // Pin required only if user not joined before
-      if (roomData._pin && !checkLocalJoined(roomId, userName)) {
-        setRequiresPin(true);
-      } else {
-        setRequiresPin(false);
-      }
+  if (!roomId || !userName) {
+    setRequiresPin(false);
+    return;
+  }
+  const roomRef = doc(db, "rooms", roomId);
+  const roomSnap = await getDoc(roomRef);
+  if (roomSnap.exists()) {
+    const roomData = roomSnap.data();
+    const userAlreadyInRoom = !!roomData[userName];
+    if (roomData._pin && !userAlreadyInRoom) {
+      setRequiresPin(true);
     } else {
       setRequiresPin(false);
     }
-  };
+  } else {
+    setRequiresPin(false);
+  }
+};
+
 
   // Update roomId and check PIN requirement on change
   const handleRoomIdChange = (e) => {
