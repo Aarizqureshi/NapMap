@@ -8,55 +8,65 @@ export default function App() {
   const [roomId, setRoomId] = useState("");
   const [userName, setUserName] = useState("");
   const [joined, setJoined] = useState(false);
-  const [roomData, setRoomData] = useState({}); // { username: { date: [timeslots] } }
+  const [roomData, setRoomData] = useState({});
 
-  // Listen for real-time updates from Firestore room document
+  // Real-time listener to room document
   useEffect(() => {
     if (!joined || !roomId) return;
 
     const roomRef = doc(db, "rooms", roomId);
-    const unsubscribe = onSnapshot(roomRef, (snapshot) => {
-      if (snapshot.exists()) {
-        setRoomData(snapshot.data());
-      } else {
-        setRoomData({});
+    const unsubscribe = onSnapshot(
+      roomRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setRoomData(snapshot.data());
+        } else {
+          setRoomData({});
+        }
+      },
+      (error) => {
+        console.error("Firestore onSnapshot error:", error);
       }
-    });
+    );
 
     return () => unsubscribe();
   }, [joined, roomId]);
 
-  // Called when user selects or creates room + username
+  // Called when user joins or creates a room
   const handleJoinRoom = (room, user) => {
     setRoomId(room);
     setUserName(user);
     setJoined(true);
   };
 
-  // Toggle timeslot for logged in user and update Firestore
+  // Toggle user's awake time slot (add/remove) and update Firestore
   const toggleTimeSlot = async (date, timeslot) => {
     if (!joined) return;
 
+    const roomRef = doc(db, "rooms", roomId);
     const userPrefs = roomData[userName] || {};
     const dateSlots = userPrefs[date] || [];
 
-    const index = dateSlots.indexOf(timeslot);
     let newSlots;
-    if (index > -1) {
-      newSlots = [...dateSlots];
-      newSlots.splice(index, 1);
+    if (dateSlots.includes(timeslot)) {
+      newSlots = dateSlots.filter((slot) => slot !== timeslot);
     } else {
       newSlots = [...dateSlots, timeslot];
     }
 
     const newUserPrefs = { ...userPrefs, [date]: newSlots };
 
-    const roomRef = doc(db, "rooms", roomId);
-    await updateDoc(roomRef, {
-      [userName]: newUserPrefs,
-    });
+    try {
+      await updateDoc(roomRef, {
+        [userName]: newUserPrefs,
+      });
+      console.log("Firestore updated successfully for user:", userName);
+    } catch (error) {
+      console.error("Error updating Firestore:", error);
+    }
   };
 
+  // Leave room and reset state
   const leaveRoom = () => {
     setJoined(false);
     setRoomId("");
@@ -64,10 +74,10 @@ export default function App() {
     setRoomData({});
   };
 
-  // Show room join/create screen first
-  if (!joined) return <RoomSelector onRoomJoin={handleJoinRoom} />;
+  if (!joined) {
+    return <RoomSelector onRoomJoin={handleJoinRoom} />;
+  }
 
-  // Show scheduler UI after joining a room
   return (
     <WakeUpScheduler
       roomData={roomData}
