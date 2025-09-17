@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "./firebaseConfig";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import RoomSelector from "./components/RoomSelector";
 import WakeUpScheduler from "./components/WakeUpScheduler";
 
@@ -10,7 +10,7 @@ export default function App() {
   const [joined, setJoined] = useState(false);
   const [roomData, setRoomData] = useState({});
 
-  // Real-time listener to room document
+  // Listen real-time for room data changes
   useEffect(() => {
     if (!joined || !roomId) return;
 
@@ -32,14 +32,32 @@ export default function App() {
     return () => unsubscribe();
   }, [joined, roomId]);
 
-  // Called when user joins or creates a room
-  const handleJoinRoom = (room, user) => {
+  // Join room and initialize user in Firestore if needed
+  const handleJoinRoom = async (room, user) => {
+    const roomRef = doc(db, "rooms", room);
+    const roomSnap = await getDoc(roomRef);
+
+    if (!roomSnap.exists()) {
+      // Create new room with user empty data
+      await setDoc(roomRef, {
+        [user]: {}
+      });
+    } else {
+      // Room exists, add user if missing
+      const roomDocData = roomSnap.data();
+      if (!roomDocData[user]) {
+        await updateDoc(roomRef, {
+          [user]: {}
+        });
+      }
+    }
+
     setRoomId(room);
     setUserName(user);
     setJoined(true);
   };
 
-  // Toggle user's awake time slot (add/remove) and update Firestore
+  // Toggle timeslot for current user, update Firebase
   const toggleTimeSlot = async (date, timeslot) => {
     if (!joined) return;
 
@@ -66,7 +84,7 @@ export default function App() {
     }
   };
 
-  // Leave room and reset state
+  // Leave room and reset all state
   const leaveRoom = () => {
     setJoined(false);
     setRoomId("");
@@ -74,6 +92,7 @@ export default function App() {
     setRoomData({});
   };
 
+  // Render join/create room UI or main scheduler UI based on joined state
   if (!joined) {
     return <RoomSelector onRoomJoin={handleJoinRoom} />;
   }
