@@ -55,50 +55,148 @@ const errorStyle = {
 };
 
 export default function RoomSelector({ onRoomJoin }) {
+  const [mode, setMode] = useState("join"); // "join" or "create"
   const [roomIdInput, setRoomIdInput] = useState("");
   const [userName, setUserName] = useState("");
+  const [pinInput, setPinInput] = useState("");
+  const [requiresPin, setRequiresPin] = useState(false);
   const [error, setError] = useState("");
 
+  // Check if room requires PIN when user enters Room ID (only in join mode)
+  const checkRoomPinRequirement = async (roomId) => {
+    if (!roomId) {
+      setRequiresPin(false);
+      return;
+    }
+    const roomRef = doc(db, "rooms", roomId);
+    const roomSnap = await getDoc(roomRef);
+    if (roomSnap.exists()) {
+      const roomData = roomSnap.data();
+      if (roomData._pin) {
+        setRequiresPin(true);
+      } else {
+        setRequiresPin(false);
+      }
+    } else {
+      setRequiresPin(false);
+    }
+  };
+
+  const handleRoomIdChange = (e) => {
+    setRoomIdInput(e.target.value.trim());
+    setError("");
+    if (mode === "join") {
+      // Check PIN requirement live
+      checkRoomPinRequirement(e.target.value.trim());
+    }
+  };
+
   const handleCreateRoom = async () => {
-    if (!roomIdInput || !userName) {
-      setError("Room ID and User Name required.");
+    setError("");
+    if (!roomIdInput || !userName || !pinInput) {
+      setError("Room No, Name and PIN are required.");
       return;
     }
     const roomRef = doc(db, "rooms", roomIdInput);
     const roomSnap = await getDoc(roomRef);
     if (roomSnap.exists()) {
-      alert("Room name already exists. Please choose a different name.");
-      setError("Room name taken");
-    } else {
-      await setDoc(roomRef, {}); // create new room
-      alert(`Room "${roomIdInput}" created!`);
-      onRoomJoin(roomIdInput, userName);
+      setError("Room name already exists. Choose a different name.");
+      return;
     }
+    // Create room document with pin stored in _pin field and empty user data
+    await setDoc(roomRef, {
+      _pin: pinInput,
+      [userName]: {},
+    });
+    alert(`Room "${roomIdInput}" created!`);
+    onRoomJoin(roomIdInput, userName);
   };
 
   const handleJoinRoom = async () => {
+    setError("");
     if (!roomIdInput || !userName) {
-      setError("Room ID and User Name required.");
+      setError("Room No and Name are required.");
       return;
     }
     const roomRef = doc(db, "rooms", roomIdInput);
     const roomSnap = await getDoc(roomRef);
     if (!roomSnap.exists()) {
-      alert("Room does not exist. Please check the name or create a new one.");
-      setError("Room does not exist");
-    } else {
-      alert(`Joined room "${roomIdInput}"`);
-      onRoomJoin(roomIdInput, userName);
+      setError("Room does not exist.");
+      return;
     }
+    const roomData = roomSnap.data();
+
+    if (roomData._pin) {
+      if (!pinInput) {
+        setError("PIN is required for this room.");
+        return;
+      }
+      if (pinInput !== roomData._pin) {
+        setError("Incorrect PIN.");
+        return;
+      }
+    }
+
+    // Add user if not already in room
+    if (!roomData[userName]) {
+      await setDoc(roomRef, { [userName]: {} }, { merge: true });
+    }
+
+    alert(`Joined room "${roomIdInput}"`);
+    onRoomJoin(roomIdInput, userName);
   };
 
   return (
     <div style={containerStyle}>
       <h2 style={{ textAlign: "center", marginBottom: 24 }}>Wake-Up Scheduler</h2>
+
+      {/* Mode toggle buttons */}
+      <div style={{ display: "flex", marginBottom: 20 }}>
+        <button
+          onClick={() => {
+            setMode("join");
+            setError("");
+            setPinInput("");
+            setRequiresPin(false);
+          }}
+          style={{
+            flex: 1,
+            padding: 10,
+            backgroundColor: mode === "join" ? "#2196F3" : "#e0e0e0",
+            color: mode === "join" ? "white" : "black",
+            border: "none",
+            borderRadius: "5px 0 0 5px",
+            cursor: "pointer",
+          }}
+        >
+          Join Room
+        </button>
+        <button
+          onClick={() => {
+            setMode("create");
+            setError("");
+            setPinInput("");
+            setRequiresPin(false);
+          }}
+          style={{
+            flex: 1,
+            padding: 10,
+            backgroundColor: mode === "create" ? "#4CAF50" : "#e0e0e0",
+            color: mode === "create" ? "white" : "black",
+            border: "none",
+            borderRadius: "0 5px 5px 0",
+            cursor: "pointer",
+          }}
+        >
+          Create Room
+        </button>
+      </div>
+
+      {/* Inputs */}
       <input
-        placeholder="Room ID"
+        placeholder="Room No"
         value={roomIdInput}
-        onChange={(e) => { setRoomIdInput(e.target.value.trim()); setError(""); }}
+        onChange={handleRoomIdChange}
         style={inputStyle}
         spellCheck="false"
         autoFocus
@@ -106,14 +204,62 @@ export default function RoomSelector({ onRoomJoin }) {
       <input
         placeholder="Your Name"
         value={userName}
-        onChange={(e) => { setUserName(e.target.value.trim()); setError(""); }}
+        onChange={(e) => {
+          setUserName(e.target.value.trim());
+          setError("");
+        }}
         style={inputStyle}
         spellCheck="false"
       />
+
+      {/* PIN input */}
+      {mode === "create" && (
+        <input
+          placeholder="PIN"
+          type="password"
+          value={pinInput}
+          onChange={(e) => {
+            setPinInput(e.target.value.trim());
+            setError("");
+          }}
+          style={inputStyle}
+          spellCheck="false"
+        />
+      )}
+      {mode === "join" && requiresPin && (
+        <input
+          placeholder="Room PIN"
+          type="password"
+          value={pinInput}
+          onChange={(e) => {
+            setPinInput(e.target.value.trim());
+            setError("");
+          }}
+          style={inputStyle}
+          spellCheck="false"
+        />
+      )}
+
+      {/* Error message */}
       {!!error && <p style={errorStyle}>{error}</p>}
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-        <button onClick={handleJoinRoom} style={joinBtnStyle}>Join Room</button>
-        <button onClick={handleCreateRoom} style={createBtnStyle}>Create Room</button>
+
+      {/* Action buttons */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: 8,
+        }}
+      >
+        {mode === "join" ? (
+          <button onClick={handleJoinRoom} style={joinBtnStyle}>
+            Join
+          </button>
+        ) : (
+          <button onClick={handleCreateRoom} style={createBtnStyle}>
+            Create
+          </button>
+        )}
       </div>
     </div>
   );

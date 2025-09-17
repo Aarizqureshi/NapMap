@@ -31,7 +31,7 @@ export default function WakeUpScheduler({
   leaveRoom,
   roomId,
 }) {
-  const roommates = Object.keys(roomData).sort();
+  const roommates = Object.keys(roomData).filter(rm => rm !== "_pin").sort();
   const [selectedRoommate, setSelectedRoommate] = useState(userName);
   const dates = [getTodayDateStr(), getTomorrowDateStr()];
 
@@ -59,96 +59,92 @@ export default function WakeUpScheduler({
       }}
     >
       <aside
-  style={{
-    width: isMobile ? "100%" : 180,
-    borderRight: isMobile ? "none" : "1px solid #ddd",
-    borderBottom: isMobile ? "1px solid #ddd" : "none",
-    backgroundColor: "#f5f5f5",
-    padding: isMobile ? 12 : 16,
-    overflowY: isMobile ? "visible" : "auto",
-    display: "flex",
-    flexDirection: isMobile ? "row" : "column",
-    flexWrap: "nowrap",
-    overflowX: isMobile ? "auto" : "hidden",
-    gap: isMobile ? 12 : 0,
-    boxSizing: "border-box",
-  }}
->
-  <h3
-    style={{
-      marginTop: 0,
-      fontWeight: "700",
-      fontSize: isMobile ? 16 : 18,
-      color: "#333",
-      lineHeight: isMobile ? "32px" : "normal",
-      whiteSpace: isMobile ? "nowrap" : "normal",
-    }}
-  >
-    Roommates
-  </h3>
-
-  <ul
-    style={{
-      padding: 0,
-      marginTop: isMobile ? 0 : 16,
-      marginLeft: isMobile ? 12 : 0,
-      listStyleType: "none",
-      display: "flex",
-      flexDirection: isMobile ? "row" : "column",
-      gap: isMobile ? 8 : 6,
-      overflowX: isMobile ? "auto" : "visible",
-      flexWrap: "nowrap",
-      flexGrow: 1,
-      scrollbarWidth: "thin",
-    }}
-  >
-    {roommates.map((rm) => (
-      <li
-        key={rm}
-        onClick={() => setSelectedRoommate(rm)}
         style={{
-          padding: isMobile ? "6px 10px" : "10px 12px",
-          backgroundColor: rm === selectedRoommate ? "#4caf50" : "transparent",
-          color: rm === selectedRoommate ? "white" : "#333",
-          borderRadius: 6,
-          cursor: "pointer",
-          fontWeight: rm === selectedRoommate ? "700" : "normal",
-          fontSize: isMobile ? 14 : 16,
-          whiteSpace: "nowrap",
-          userSelect: "none",
-          minWidth: isMobile ? 80 : "auto",
+          width: isMobile ? "100%" : 180,
+          borderRight: isMobile ? "none" : "1px solid #ddd",
+          borderBottom: isMobile ? "1px solid #ddd" : "none",
+          backgroundColor: "#f5f5f5",
+          padding: isMobile ? 12 : 16,
+          overflowY: isMobile ? "visible" : "auto",
+          display: "flex",
+          flexDirection: isMobile ? "row" : "column",
+          flexWrap: "nowrap",
+          overflowX: isMobile ? "auto" : "hidden",
+          gap: isMobile ? 12 : 0,
+          boxSizing: "border-box",
         }}
-        title={rm}
       >
-        {rm === userName ? `${rm} (You)` : rm}
-      </li>
-    ))}
-  </ul>
-
-  {/* Push Leave Room button to bottom on desktop */}
-  <button
-    onClick={leaveRoom}
-    style={{
-      marginTop: isMobile ? 0 : "auto",
-      marginLeft: isMobile ? 12 : 0,
-      padding: isMobile ? "6px 10px" : 10,
-      fontWeight: "600",
-      backgroundColor: "#f44336",
-      color: "white",
-      border: "none",
-      borderRadius: 6,
-      cursor: "pointer",
-      flex: isMobile ? "0 0 auto" : "none",
-      fontSize: isMobile ? 14 : 16,
-      userSelect: "none",
-      alignSelf: isMobile ? "center" : "stretch",
-    }}
-    title="Leave this room"
-  >
-    Leave
-  </button>
-</aside>
-
+        <h3
+          style={{
+            marginTop: 0,
+            fontWeight: "700",
+            fontSize: isMobile ? 16 : 18,
+            color: "#333",
+            lineHeight: isMobile ? "32px" : "normal",
+            whiteSpace: isMobile ? "nowrap" : "normal",
+          }}
+        >
+          Roommates
+        </h3>
+        <ul
+          style={{
+            padding: 0,
+            marginTop: isMobile ? 0 : 16,
+            marginLeft: isMobile ? 12 : 0,
+            listStyleType: "none",
+            display: "flex",
+            flexDirection: isMobile ? "row" : "column",
+            gap: isMobile ? 8 : 6,
+            overflowX: isMobile ? "auto" : "visible",
+            flexWrap: "nowrap",
+            flexGrow: 1,
+            scrollbarWidth: "thin",
+          }}
+        >
+          {roommates.map((rm) => (
+            <li
+              key={rm}
+              onClick={() => setSelectedRoommate(rm)}
+              style={{
+                padding: isMobile ? "6px 10px" : "10px 12px",
+                backgroundColor: rm === selectedRoommate ? "#4caf50" : "transparent",
+                color: rm === selectedRoommate ? "white" : "#333",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontWeight: rm === selectedRoommate ? "700" : "normal",
+                fontSize: isMobile ? 14 : 16,
+                whiteSpace: "nowrap",
+                userSelect: "none",
+                minWidth: isMobile ? 80 : "auto",
+              }}
+              title={rm}
+            >
+              {rm === userName ? `${rm} (You)` : rm}
+            </li>
+          ))}
+        </ul>
+        <button
+          onClick={leaveRoom}
+          style={{
+            marginTop: isMobile ? 0 : "auto",
+            marginLeft: isMobile ? 12 : 0,
+            padding: isMobile ? "6px 10px" : 10,
+            fontWeight: "600",
+            backgroundColor: "#f44336",
+            color: "white",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+            flex: isMobile ? "0 0 auto" : "none",
+            fontSize: isMobile ? 14 : 16,
+            userSelect: "none",
+            alignSelf: isMobile ? "center" : "stretch",
+          }}
+          title="Leave this room"
+        >
+          Leave
+        </button>
+      </aside>
 
       <main
         style={{
@@ -159,11 +155,33 @@ export default function WakeUpScheduler({
           display: "flex",
           flexDirection: "column",
           gap: 24,
+          position: "relative",
         }}
       >
-        <h2 style={{ marginTop: 0, fontSize: isMobile ? 20 : 24 }}>
-          Room: <span style={{ color: "#4CAF50" }}>{roomId}</span>
-        </h2>
+        <header style={{ marginBottom: 20, position: "relative" }}>
+          <h2 style={{ margin: 0, fontSize: isMobile ? 20 : 24 }}>
+            Room: <span style={{ color: "#4CAF50" }}>{roomId}</span>
+          </h2>
+          {roomData && roomData._pin && (
+            <small
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                fontSize: 12,
+                color: "#888",
+                userSelect: "text",
+                padding: "4px 8px",
+                fontWeight: "500",
+                fontFamily: "monospace",
+              }}
+              title="Room PIN"
+            >
+              PIN: {roomData._pin}
+            </small>
+          )}
+        </header>
+
         <p style={{ fontSize: isMobile ? 14 : 16 }}>
           Viewing schedule for:{" "}
           <strong style={{ fontSize: isMobile ? 16 : 18 }}>
