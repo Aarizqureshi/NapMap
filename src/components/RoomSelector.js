@@ -252,23 +252,19 @@ export default function RoomSelector({ onRoomJoin }) {
       />
 
       {/* PIN input */}
-      {mode === "join" && (
-  <input
-    placeholder={requiresPin ? "Room PIN" : "NO PIN REQUIRED"}
-    type="password"
-    value={pinInput}
-    onChange={(e) => {
-      // Prevent input if PIN not required
-      if (requiresPin) {
-        setPinInput(e.target.value.trim());
-        setError("");
-      }
-    }}
-    style={inputStyle}
-    spellCheck="false"
-    readOnly={!requiresPin}  // Make read-only if PIN not required
-  />
-)}
+      {mode === "create" && (
+        <input
+          placeholder="PIN"
+          type="password"
+          value={pinInput}
+          onChange={(e) => {
+            setPinInput(e.target.value.trim());
+            setError("");
+          }}
+          style={inputStyle}
+          spellCheck="false"
+        />
+      )}
       {mode === "join" && requiresPin && (
         <input
           placeholder="Room PIN"
