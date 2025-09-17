@@ -10,7 +10,6 @@ export default function App() {
   const [joined, setJoined] = useState(false);
   const [roomData, setRoomData] = useState({});
 
-  // Listen real-time for room data changes
   useEffect(() => {
     if (!joined || !roomId) return;
 
@@ -28,22 +27,18 @@ export default function App() {
         console.error("Firestore onSnapshot error:", error);
       }
     );
-
     return () => unsubscribe();
   }, [joined, roomId]);
 
-  // Join room and initialize user in Firestore if needed
   const handleJoinRoom = async (room, user) => {
     const roomRef = doc(db, "rooms", room);
     const roomSnap = await getDoc(roomRef);
 
     if (!roomSnap.exists()) {
-      // Create new room with user empty data
       await setDoc(roomRef, {
         [user]: {}
       });
     } else {
-      // Room exists, add user if missing
       const roomDocData = roomSnap.data();
       if (!roomDocData[user]) {
         await updateDoc(roomRef, {
@@ -57,7 +52,7 @@ export default function App() {
     setJoined(true);
   };
 
-  // Toggle timeslot for current user, update Firebase
+  // Only one timeslot allowed per day here
   const toggleTimeSlot = async (date, timeslot) => {
     if (!joined) return;
 
@@ -67,9 +62,9 @@ export default function App() {
 
     let newSlots;
     if (dateSlots.includes(timeslot)) {
-      newSlots = dateSlots.filter((slot) => slot !== timeslot);
+      newSlots = [];
     } else {
-      newSlots = [...dateSlots, timeslot];
+      newSlots = [timeslot];
     }
 
     const newUserPrefs = { ...userPrefs, [date]: newSlots };
@@ -78,13 +73,11 @@ export default function App() {
       await updateDoc(roomRef, {
         [userName]: newUserPrefs,
       });
-      console.log("Firestore updated successfully for user:", userName);
     } catch (error) {
       console.error("Error updating Firestore:", error);
     }
   };
 
-  // Leave room and reset all state
   const leaveRoom = () => {
     setJoined(false);
     setRoomId("");
@@ -92,7 +85,6 @@ export default function App() {
     setRoomData({});
   };
 
-  // Render join/create room UI or main scheduler UI based on joined state
   if (!joined) {
     return <RoomSelector onRoomJoin={handleJoinRoom} />;
   }

@@ -7,7 +7,11 @@ const TIMESLOTS = [
 ];
 
 function formatTime(t) {
-  // as before ...
+  const [h, m] = t.split(":");
+  const hour = parseInt(h);
+  const suffix = hour < 12 ? "AM" : "PM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${m} ${suffix}`;
 }
 
 function getTodayDateStr() {
@@ -31,7 +35,6 @@ export default function WakeUpScheduler({
   const [selectedRoommate, setSelectedRoommate] = useState(userName);
   const dates = [getTodayDateStr(), getTomorrowDateStr()];
 
-  // Track window width for responsive styles, optional to use resize listener
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 600);
@@ -44,8 +47,7 @@ export default function WakeUpScheduler({
       style={{
         maxWidth: 900,
         margin: "30px auto",
-        fontFamily:
-          "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         display: "flex",
         flexDirection: isMobile ? "column" : "row",
         border: "1px solid #ddd",
@@ -56,7 +58,6 @@ export default function WakeUpScheduler({
         userSelect: "none",
       }}
     >
-      {/* Sidebar */}
       <aside
         style={{
           width: isMobile ? "100%" : 180,
@@ -144,7 +145,6 @@ export default function WakeUpScheduler({
         </button>
       </aside>
 
-      {/* Timeslot panel */}
       <main
         style={{
           flexGrow: 1,
@@ -170,8 +170,8 @@ export default function WakeUpScheduler({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
-            gap: isMobile ? 12 : 24,
+            gridTemplateColumns: isMobile ? "repeat(auto-fit, minmax(60px, 1fr))" : "repeat(3, 1fr)",
+            gap: 12,
             userSelect: "none",
           }}
         >
@@ -206,7 +206,7 @@ export default function WakeUpScheduler({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(2,1fr)",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(60px,1fr))",
                     gap: 8,
                   }}
                 >
@@ -217,7 +217,7 @@ export default function WakeUpScheduler({
                         key={ts}
                         onClick={() => canEdit && toggleTimeSlot(date, ts)}
                         style={{
-                          padding: "6px",
+                          padding: "8px 6px",
                           borderRadius: 6,
                           border: "none",
                           cursor: canEdit ? "pointer" : "default",
@@ -228,8 +228,9 @@ export default function WakeUpScheduler({
                           fontSize: 14,
                           transition: "background-color 0.3s",
                           userSelect: "none",
+                          whiteSpace: "nowrap",
                         }}
-                        title={`${formatTime(ts)}${canEdit ? " - Click to toggle" : ""}`}
+                        title={`${formatTime(ts)}${canEdit ? " - Click to select" : ""}`}
                       >
                         {formatTime(ts)}
                       </button>
