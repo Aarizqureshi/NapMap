@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 
@@ -62,9 +62,36 @@ export default function RoomSelector({ onRoomJoin }) {
   const [requiresPin, setRequiresPin] = useState(false);
   const [error, setError] = useState("");
 
-  // Check if room requires PIN when user enters Room ID (only in join mode)
+  // Check if joined rooms info saved locally for skipping PIN
+  const checkLocalJoined = (roomId, user) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
+      return saved.some(
+        (entry) =>
+          entry.roomId === roomId && entry.userName === user
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  // Save joined rooms to localStorage
+  const saveLocalJoined = (roomId, user) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("joinedRooms") || "[]");
+      const existing = saved.filter(
+        (entry) => entry.roomId !== roomId || entry.userName !== user
+      );
+      existing.push({ roomId, userName: user });
+      localStorage.setItem("joinedRooms", JSON.stringify(existing));
+    } catch {
+      // ignore errors
+    }
+  };
+
+  // Check if PIN required for join mode when roomId changes
   const checkRoomPinRequirement = async (roomId) => {
-    if (!roomId) {
+    if (!roomId || !userName) {
       setRequiresPin(false);
       return;
     }
@@ -72,7 +99,8 @@ export default function RoomSelector({ onRoomJoin }) {
     const roomSnap = await getDoc(roomRef);
     if (roomSnap.exists()) {
       const roomData = roomSnap.data();
-      if (roomData._pin) {
+      // Pin required only if user not joined before
+      if (roomData._pin && !checkLocalJoined(roomId, userName)) {
         setRequiresPin(true);
       } else {
         setRequiresPin(false);
@@ -82,12 +110,23 @@ export default function RoomSelector({ onRoomJoin }) {
     }
   };
 
+  // Update roomId and check PIN requirement on change
   const handleRoomIdChange = (e) => {
-    setRoomIdInput(e.target.value.trim());
+    const val = e.target.value.trim();
+    setRoomIdInput(val);
     setError("");
     if (mode === "join") {
-      // Check PIN requirement live
-      checkRoomPinRequirement(e.target.value.trim());
+      checkRoomPinRequirement(val);
+    }
+  };
+
+  // Update user name and check PIN requirement where applicable
+  const handleUserNameChange = (e) => {
+    const val = e.target.value.trim();
+    setUserName(val);
+    setError("");
+    if (mode === "join" && roomIdInput) {
+      checkRoomPinRequirement(roomIdInput);
     }
   };
 
@@ -103,11 +142,11 @@ export default function RoomSelector({ onRoomJoin }) {
       setError("Room name already exists. Choose a different name.");
       return;
     }
-    // Create room document with pin stored in _pin field and empty user data
     await setDoc(roomRef, {
       _pin: pinInput,
       [userName]: {},
     });
+    saveLocalJoined(roomIdInput, userName);
     alert(`Room "${roomIdInput}" created!`);
     onRoomJoin(roomIdInput, userName);
   };
@@ -126,7 +165,9 @@ export default function RoomSelector({ onRoomJoin }) {
     }
     const roomData = roomSnap.data();
 
-    if (roomData._pin) {
+    const hasJoinedBefore = checkLocalJoined(roomIdInput, userName);
+
+    if (roomData._pin && !hasJoinedBefore) {
       if (!pinInput) {
         setError("PIN is required for this room.");
         return;
@@ -137,11 +178,11 @@ export default function RoomSelector({ onRoomJoin }) {
       }
     }
 
-    // Add user if not already in room
     if (!roomData[userName]) {
       await setDoc(roomRef, { [userName]: {} }, { merge: true });
     }
 
+    saveLocalJoined(roomIdInput, userName);
     alert(`Joined room "${roomIdInput}"`);
     onRoomJoin(roomIdInput, userName);
   };
@@ -204,10 +245,7 @@ export default function RoomSelector({ onRoomJoin }) {
       <input
         placeholder="Your Name"
         value={userName}
-        onChange={(e) => {
-          setUserName(e.target.value.trim());
-          setError("");
-        }}
+        onChange={handleUserNameChange}
         style={inputStyle}
         spellCheck="false"
       />
